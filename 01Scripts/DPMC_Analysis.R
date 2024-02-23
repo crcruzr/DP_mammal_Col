@@ -10,7 +10,7 @@ library(forcats)
 
 
 #Folder
-setwd('/Users/ccruzr/Library/Mobile Documents/com~apple~CloudDocs/Cristian/Documents/Trabajo/publicaciones/Data paper mammals/SegundaVersion')
+setwd('/Users/ccruzr/Library/Mobile Documents/com~apple~CloudDocs/Cristian/Documents/Trabajo/publicaciones/Data paper mammals/DP_mammal_Col')
 new.crs<-'+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 
 ## basemaps
@@ -81,8 +81,12 @@ table(dt$year)
 
 # Resolución 0126 de 2024 expedida por el Ministerio de Ambiente y Desarrollo Sostenible
 # https://doi.org/10.15472/frowz3
-res<- data.table::fread('00RawData/dwca-especies-amenazadas-mads-2024/taxon.txt')
-re2<- data.table::fread('00RawData/dwca-especies-amenazadas-mads-2024/distribution.txt')
+download.file("https://ipt.biodiversidad.co/sib/archive.do?r=especies-amenazadas-mads-2024", "./03ProcessedData/test.zip")
+unzip("03ProcessedData/test.zip", exdir = "./03ProcessedData/taxon_distribution")
+file.remove("03ProcessedData/test.zip")
+
+res <- read_tsv("03ProcessedData/taxon_distribution/taxon.txt")
+re2 <- read_tsv("03ProcessedData/taxon_distribution/distribution.txt")
 resCol <- res %>%
      full_join(re2, c("id")) %>%
      filter(scientificName %in% spe_count$scientificName) %>%
@@ -94,7 +98,6 @@ resCol <- res %>%
 sp<-rredlist::rl_sp(all = TRUE, key = "441e9e03832696e08879d3ff84847b5422c897d9dfd87b65f63550ea4030c78b")
 #unir resultados en una tabla
 all_df <- do.call(rbind, lapply(sp, "[[", "result"))
-
 thrIUCN <- all_df %>%
      filter(scientific_name %in% spe_count$scientificName) %>%
      select(scientific_name, category) %>%
