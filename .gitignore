@@ -2,8 +2,9 @@
 00RawData/*
 01Scripts/*
 03ProcessedData/*
-05OutData/*
 
 # Don't ignore these
 # !00RawData/ColDP.csv Example
+!01Scripts/DPMC_Analysis.R
+
 !*/.gitkeep
