@@ -2,9 +2,10 @@
 00RawData/*
 01Scripts/*
 03ProcessedData/*
+02Manuscript/*
 
 # Don't ignore these
 # !00RawData/ColDP.csv Example
 !01Scripts/DPMC_Analysis.R
-
+!02Manuscript/Datapaper endemic, threatened and mammals subject to use final version.pdf
 !*/.gitkeep
