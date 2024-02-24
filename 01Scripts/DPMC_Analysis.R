@@ -48,7 +48,6 @@ unif$sites <- paste(unif$decimalLatitude, unif$decimalLongitude) # Identify uniq
 nrow(unif[!duplicated(unif$sites),]) ## unique sites
 unif <- unif[!duplicated(unif$coords),]
 unif$basisOfRecord <- gsub('HumanObservation', 'Human Observation', gsub('MachineObservation', 'Machine Observation', gsub('PreservedSpecimen', 'Preserved Specimen', unif$basisOfRecord)))
-table(unif$basisOfRecord)
 coordinates(unif)<- ~ decimalLongitude + decimalLatitude
 crs(unif) <- '+proj=longlat +datum=WGS84'
 unif_sf <- sf::st_as_sf(unif, coords = c("decimalLongitude", "decimalLatitude"), crs = 4326)
@@ -129,14 +128,16 @@ citT <- cit %>%
      rename(CITES = CurrentListing)%>%
      rename(scientificName = FullName); head(citT)
 
+tax <- dt %>%
+  distinct(scientificName, .keep_all = TRUE) %>%
+  select(scientificName, scientificNameAuthorship)
+
 tableF <- dt %>%
   group_by(order, family, scientificName, basisOfRecord) %>%
   summarize(Count = n()) %>%
   pivot_wider(names_from = basisOfRecord, values_from = Count)%>%
   as.data.frame(); head(tableF, 10)
 tableF$PreservedSpecimen <- gsub('Invalid Number', 0, tableF$PreservedSpecimen)
-
-tax<- as.data.frame(unif[,c('scientificName', 'scientificNameAuthorship')])
 
 # Final table
 tableF <- tableF %>% 
