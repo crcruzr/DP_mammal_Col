@@ -1,8 +1,10 @@
 ########################################################################
 ##  Presence data of mammals presented in Colombia                     ##
-##  DOI:
+##  DOI:                                                               ## 
 ##  Script to generate statistics figures and tables of the datapaper  ##
 ##  Development by: Cristian A. Cruz-Rodriguez                         ##
+##  Étudiant de Doctorat en Sciences Biologiques                       ##
+##  Université de Montréal                                             ##   
 ##  https://github.com/crcruzr                                         ##
 ##  Date: feb 2024                                                     ##
 #########################################################################
@@ -152,7 +154,7 @@ tableF <- tableF %>%
 
 data.table::fwrite(tableF, '05OutData/Table2.csv')
 
-rm(dt, unif, tableF, tax, citT, cit, thrIUCN, all_df, sp, keyiucn, res, re2, resCol, Mpio, Depto, BoR, spe_count)
+rm(unif, tableF, tax, citT, cit, thrIUCN, all_df, sp, keyiucn, res, re2, resCol, Mpio, Depto, BoR, spe_count)
 
 # Map1
 tmf<- tm_shape(as(extcol, "Spatial"))+
