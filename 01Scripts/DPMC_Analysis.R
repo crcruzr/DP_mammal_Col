@@ -16,27 +16,30 @@ library(sp)
 library(geodata)
 library(treemap)
 library(forcats)
-
-file.choose() #Folder withe the files
+library(rredlist)
 
 ##########
 ## basemaps to plots
 ######################
 
 ## Colombia
-colombia <- (gadm('COL' , level = 1, path=tempdir()))
-colo <- as(gadm('COL' , level = 0, path=tempdir()), 'Spatial') # to map
+
+
+colombia <- gadm('COL' , level = 1, path=tempdir())
+colo <- gadm('COL' , level = 0, path=tempdir()) # to map
 ## World
-data("World")
-suda <- as(World[World$continent %in% 'South America',], 'Spatial')
-suda<- suda[!suda$iso_a3 %in% c('FLK'),]
+# Download South America countries and merge (level 0 = country borders)
+south_america <- geodata::gadm(country = c("ARG","BOL","BRA","CHL","COL","ECU","GUY","PRY","PER","SUR","URY","VEN" ,"PAN"), level = 0, path = "/Users/ccruzr/maps")
+# Merge vector layers into one
+suda <- terra::union(south_america)
+
 #extent plot
 extcol <- as.polygons(ext(-80, -65, -4.9, 12.9), crs="WGS84")
 plot(extcol)
 plot(colombia, add = TRUE)
 ## Island
-col_nsprov<- as(colombia[!colombia$NAME_1 %in% 'San Andrés y Providencia',], 'Spatial')
-syprov<- as(colombia[colombia$NAME_1 %in% 'San Andrés y Providencia',], 'Spatial')
+col_nsprov<- colombia[!colombia$NAME_1 %in% 'San Andrés y Providencia',]
+syprov<- colombia[colombia$NAME_1 %in% 'San Andrés y Providencia',]
 
 #######
 ## Ocurrences
@@ -52,7 +55,7 @@ unif <- unif[!duplicated(unif$coords),]
 unif$basisOfRecord <- gsub('HumanObservation', 'Human Observation', gsub('MachineObservation', 'Machine Observation', gsub('PreservedSpecimen', 'Preserved Specimen', unif$basisOfRecord)))
 coordinates(unif)<- ~ decimalLongitude + decimalLatitude
 crs(unif) <- '+proj=longlat +datum=WGS84'
-unif_sf <- sf::st_as_sf(unif, coords = c("decimalLongitude", "decimalLatitude"), crs = 4326)
+unif_sf <- vect(unif, geom=c("decimalLongitude", "decimalLatitude"), crs="wgs84")
 
 rm(World)
 
@@ -108,7 +111,7 @@ resCol <- res %>%
 
 # UICN Red List
 # Global UICN categories 
-sp<-rredlist::rl_sp(all = TRUE, key = keyiucn) # key provied for the IUCN
+sp<-rl_sp(all = TRUE, key = keyiucn) # key provied for the IUCN
 all_df <- do.call(rbind, lapply(sp, "[[", "result"))
 
 thrIUCN <- all_df %>%
@@ -158,32 +161,59 @@ rm(unif, tableF, tax, citT, cit, thrIUCN, all_df, sp, keyiucn, res, re2, resCol,
 
 # Map1
 tmf<- tm_shape(as(extcol, "Spatial"))+
-  tm_polygons(col = "#a3a3a3")+
+    #tm_borders(col = "white") +
   tm_shape((crop(suda, c(-82, -65, -4.9, 12.9)))) +
-  tm_polygons(col = "#d7d7d7")+
+   tm_fill(col = "#ebebeb", alpha = 0.7) +   # Sudamerica
+  tm_borders(col = "#d7d7d7", lwd = 1) +
   tm_shape(col_nsprov) +
-  tm_grid(alpha = 0.3, col = '#f7f7f7')+
-  tm_polygons()+
+   tm_fill(col = "#e7e6e6") +   # Colombia
+  tm_borders(col = "gray70")+
+  tm_grid(alpha = 0.3, col = '#f7f7f7') +
+  tm_compass(position = c(.1, .2), size = 3) +
+  #tm_scalebar(position = c(.1, .1), size = 100, breaks = c(0, 50, 100)) +
+  tm_graticules(
+    fill_alpha = 0.05,
+    col = '#a7a7a7',
+    labels.size = 0.9,
+    n.y = 8, n.x = 6, lwd = 0.2,
+    labels.cardinal = TRUE,
+    labels.inside.frame = FALSE) +
+  tm_scale_bar(position = c("left", "bottom", size=5)) +
   tm_shape(unif_sf) +
-  tm_compass(position = c("left", "bottom"), size = 4) +
-  tm_scale_bar(position = c("left", "bottom", size=5))+
-  tm_dots(border.col = "blue",  col = 'basisOfRecord',palette = c("#4a5ef9","#11541b","#ff8000"), size=0.3, shape=20, legend.show = TRUE, "Basis of Record")+
+  tm_dots(border.col = "blue",  col = 'basisOfRecord',
+  palette = c("#4a5ef9","#11541b","#ff8000"), size=0.3, shape=20,
+   legend.show = FALSE, "Basis of Record") + 
+  tm_add_legend(
+    type = "symbol",
+    col = c("#4a5ef9","#11541b","#ff8000"),
+    shape = 22,
+    labels = c("Machine Observation" , "Preserved Specimen", "Human Observation"),
+    title = "") +
   tm_layout(legend.bg.color="#ffffff", legend.position = c(0.75, 0.85))
 
+tmf
+
 # Create viewport
-vp <- grid::viewport(x = 0.15, y = 0.85, width = 0.15, height = 0.15)
-vp2 <- grid::viewport(x = 0.25, y = 0.85, width = 0.2, height = 0.12)
-vp3 <- grid::viewport(x = 0.83, y = 0.22, width = 0.25, height = 0.3)
+vp <- grid::viewport(x = 0.15, y = 0.89, width = 0.15, height = 0.15)
+vp2 <- grid::viewport(x = 0.25, y = 0.90, width = 0.2, height = 0.12)
+vp3 <- grid::viewport(x = 0.83, y = 0.2, width = 0.25, height = 0.3)
 vpa<- list(vp, vp2, vp3)
 
 # Framework
 satm<-tm_shape(syprov, bbox=tmaptools::bb(matrix(c(-81.74,12.47,-81.68,12.60),2,2))) +tm_polygons() #san Andres
 optm<-tm_shape(syprov, bbox=tmaptools::bb(matrix(c(-81.41,13.31,-81.34,13.40),2,2))) +tm_polygons() #providencia
-sud <- tm_shape(suda)+ tm_polygons() + tm_shape(colo)+
-     tm_polygons(col = "#000000") + tm_grid(alpha = 0.4, col = '#a7a7a7', labels.size = 0.3)# sudamerica
 
-is_tm<- list(satm, optm, sud)
-tmap_save(tmf, insets_tm= is_tm, insets_vp= vpa, filename=("04Plots/recods_BoR1.jpeg"), dpi = 300)
+sud1 <- tm_shape(suda) + 
+  tm_polygons(col = "#ebebeb", alpha = 0.7) +   # Sudamerica light beige fill
+  tm_borders(col = "#d7d7d7") +    # light gray borders for Colombia (from original code)
+  tm_shape(colo) +
+  tm_polygons(col = "#e7e6e6") +   # Colombia wheat fill
+  tm_borders(col = "#000000") + 
+  tm_grid(alpha = 0.4, col = '#8b8b8b', labels.size =0.5, lwd = 0.2) + # grid
+tm_layout(bg.color = "white") 
+
+is_tm<- list(satm, optm, sud1)
+tmap_save(tmf, insets_tm= is_tm, insets_vp= vpa, filename=("04Plots/recods_BoR2.jpeg"), dpi = 300)
 
 rm(tmf, vp, vpa, vp3, vp2, sud, satm, optm,is_tm,suda,extcol,colombia, colo, col_nsprov, syprov)
 
